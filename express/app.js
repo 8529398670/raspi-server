@@ -49,13 +49,6 @@ app.get( "/turnoff" , function( req , res ) {
 	res.json( { "state" : cur_state.state } );
 });
 
-app.post( "/python-script" , ( req , res ) => {
-	//events.emit( "log" , { message: `EXPRESS === POST /python-script` } );
-	if ( !req.body ) { res.json( { result: false } ); }
-	events.emit( "python-script-controller" , req.body );
-	res.json( { result: true } );
-});
-
 const HTML_Live_Path = path.join( __dirname , "../../client/views/" , "live.html" );
 app.get( "/live" , function( req , res ) {
 	res.sendFile( HTML_Live_Path );
@@ -66,11 +59,18 @@ app.get( "/live_image" , async function( req , res , next ) {
 	fs.readFile( FramePATH , function( err , data ) {
 		if ( err ) { res.json( { "error" : err } ); }
 		else {
-			res.writeHead( 200 , {'Content-Type': 'image/jpeg'} );
+			res.writeHead( 200 , { "Content-Type": "image/jpeg" } );
 			res.write( data );
 			res.end();
 		}
 	});
+});
+
+app.post( "/python-script" , ( req , res ) => {
+	//events.emit( "log" , { message: `EXPRESS === POST /python-script` } );
+	if ( !req.body ) { res.json( { result: false } ); }
+	events.emit( "python-script-controller" , req.body );
+	res.json( { result: true } );
 });
 
 module.exports = app;

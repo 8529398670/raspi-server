@@ -3,8 +3,6 @@ function load_custom_event_list() {
 		const events = require( "../main.js" ).events;
 		const GenericUtils = require( "../utils/generic.js" );
 		const Publishing = require( "./RedisPublishingManager.js" );
-		const redis_manager = require( "../main.js" ).redis_manager;
-
 		function python_publish( options ) {
 			try {
 				console.log( options.message );
