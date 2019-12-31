@@ -1,0 +1,33 @@
+<html>
+
+<script>
+
+	var socket = null;
+	var webSocketConnectionString = "ws://127.0.0.1:10080";
+
+	socket = new WebSocket( webSocketConnectionString );
+
+	socket.onopen = function () {
+		console.log( socket.id );
+		socket.send( JSON.stringify({
+			"type": "get_frames" ,
+			"count": 1 ,
+			"list_key": "sleep.images.frames.2019.10.25"
+		}));
+	};
+
+	socket.onmessage = function ( message ) {
+		if ( !message ) { return; }
+		console.log( message );
+		message = JSON.parse( message.data );
+		console.log( message );
+	};
+
+	socket.onerror = function (error) {
+		console.log( "WebSocket error: " + error);
+	};
+
+</script>
+
+
+</html>

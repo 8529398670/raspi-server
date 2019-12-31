@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Sleep Log Viewer</title>
+	<script src="./nacl.min.js"></script>
+	<script src="./nacl-util.min.js"></script>
+	<script src="./sealedbox.web.js"></script>
+</head>
+
+<body>
+
+	<script>
+
+		function get_eastern_time_key_suffix() {
+			const now = new Date( new Date().toLocaleString( "en-US" , { timeZone: "America/New_York" } ) );
+			const now_hours = now.getHours();
+			const now_minutes = now.getMinutes();
+			const dd = String( now.getDate() ).padStart( 2 , '0' );
+			const mm = String( now.getMonth() + 1 ).padStart( 2 , '0' );
+			const yyyy = now.getFullYear();
+			const hours = String( now.getHours() ).padStart( 2 , '0' );
+			const minutes = String( now.getMinutes() ).padStart( 2 , '0' );
+			const seconds = String( now.getSeconds() ).padStart( 2 , '0' );
+			const key_suffix = `${ yyyy }.${ mm }.${ dd }`;
+			return key_suffix;
+		}
+
+		// const tweetnacl = require( "tweetnacl" );
+		// tweetnacl.util = require( "tweetnacl-util" );
+		// tweetnacl.sealedbox = require( "tweetnacl-sealedbox-js" );
+
+		let libsodium_public_key = "bPXklNaMXlxvj0jfIvqTa6aNr/csMPTQsl0c13ocz2A=";
+		let libsodium_private_key = "uLlzLA6oBXbCAhvSwbjia//XHfivk5xr4aH6wSYScac=";
+		let secretKeyBin = window.nacl.util.decodeBase64( libsodium_public_key );
+		let publicKeyBin = window.nacl.box.keyPair.fromSecretKey( secretKeyBin ).publicKey;
+
+		function decrypt( decryptMe ) {
+			let decryptMeBin = window.nacl.util.decodeBase64( decryptMe );
+			let decryptedBin = window.sealedBox.open( decryptMeBin , publicKeyBin , secretKeyBin );
+			console.log( decryptedBin );
+			let decryptedUTF8 = new String( decryptedBin , "UTF-8" );
+			return decryptedUTF8;
+		}
+
+
+		let connection = false;
+		document.addEventListener( "DOMContentLoaded" , function() {
+
+		});
+		console.log( "wadu ??" );
+		connection = new WebSocket( "ws://localhost:10080" );
+		connection.onopen = function () {
+			console.log( connection );
+			let key = "sleep.log." + get_eastern_time_key_suffix();
+			let count = -1;
+			connection.send( JSON.stringify({
+				"type": "redis_get_lrange" ,
+				"starting_position": 0 ,
+				"ending_position": count ,
+				"list_key": key ,
+				"channel": "log"
+			}));
+		};
+		connection.onmessage = function ( data ) {
+			if ( !data ) { return; }
+			data = JSON.parse( data.data );
+			console.log( data );
+			if ( !data ) { return; }
+			console.log( data.message );
+			if ( data.message === "new_logs" ) {
+				data = data.data;
+				let decrypted_messages = [];
+				for ( let i = 0; i < data.length; ++i ) {
+					try {
+						let decrypted = decrypt( data[ i ] );
+						console.log( decrypted );
+						decrypted = JSON.parse( decrypted );
+						decrypted_messages.push( decrypted );
+					}
+					catch ( error ) { console.log( error ); }
+				}
+				// for ( let i = ( decrypted_messages.length - 1 ); i > 0; --i ) {
+				// 	console.log( decrypted_messages[ i ].message );
+				// }
+			}
+		};
+		connection.onerror = function (error) {
+			console.log( "WebSocket error: " + error);
+		};
+	</script>
+
+
+	<h1>Wadu</h1>
+</body>
+</html>

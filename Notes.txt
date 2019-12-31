@@ -1,0 +1,211 @@
+https://www.thepolyglotdeveloper.com/2016/01/creating-a-real-time-chat-application-with-ionic-2-and-socket-io/
+
+// Neural Network Stuff , mainly GAN's
+// https://www.one-tab.com/page/kn7NNp6HSpGx7rQH9am5UQ
+
+// Tensorflow Image Classifier
+// https://github.com/sankit1/cv-tricks.com/tree/master/Tensorflow-tutorials/tutorial-2-image-classifier
+
+// Raspi Docker Stuff
+// https://www.one-tab.com/page/XmaMxt1FTAW-5zkgg3hUCw
+
+https://github.com/shaqian/react-native-ssh-sftp
+https://stackoverflow.com/questions/44088058/proper-way-of-using-websockets-with-react-native#44088701
+
+0.) Fix REDIS Disonnection Error on Raspberry Pi
+https://github.com/Automattic/kue/issues/1091
+sudo sysctl -w net.core.somaxconn=1024
+sudo sysctl -p
+
+0.) Install Docker on Raspberry Pi for Testing
+curl -sSL https://get.docker.com | sh
+sudo docker pull arm64v8/debian
+https://github.com/mohaseeb/raspberrypi3-opencv-docker/tree/master/opencv_3/3.4.2
+
+==============================================================================================================================
+==============================================================================================================================
+1.) Create Service on Raspberry PI To Keep a Reverse Tunnel Open to the Remote REDIS Server
+2.) The Problem is if you have already used autossh for some other Tunnel , you can't add more somehow
+3.) So  use the other type of service in 2.) If you have autossh running something else
+
+sudo touch /var/run/autossh-redis1.pid
+sudo chmod 644 /var/run/autossh-redis1.pid
+
+sudo nano /etc/systemd/system/autossh-redis1.service
+
+[Unit]
+Description=Keeps a tunnel to 'Redis1' Open
+After=network.target
+[Service]
+Environment="AUTOSSH_PIDFILE=/var/run/autossh.pid"
+Environment="AUTOSSH_POLL=60"
+Environment="AUTOSSH_FIRST_POLL=30"
+Environment="AUTOSSH_GATETIME=0"
+Environment="AUTOSSH_DEBUG=1"
+ExecStart=/usr/bin/autossh -M 10003 -N -L 10079:localhost:6379 $VPS_SLEEP_USER@$VPS_IP -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -o IdentitiesOnly=yes  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -F /dev/null -i /home/pi/.ssh/$SSH_PRIVATE_KEY
+ExecStop=/usr/bin/pkill autossh
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
+
+==============================================================================================================================
+==============================================================================================================================
+2.) Create
+
+sudo nano /etc/systemd/system/autossh-redis1.service
+
+[Unit]
+Description=SSH Tunnel to Redis1
+After=network.target
+
+[Service]
+Restart=always
+RestartSec=20
+User=pi
+ExecStart=/usr/bin/ssh -N -L 10089:localhost:6379 $REMOTE_REDIS_SERVER_USERNAME@$REMOTE_REDIS_SERVER_IP ServerAliveInterval=60 -o ServerAliveCountMax=3 -o IdentitiesOnly=yes  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -F /dev/null -i /home/pi/.ssh/$REMOTE_REDIS_SERVER_PRIVATE_KEY
+
+[Install]
+WantedBy=multi-user.target
+
+==============================================================================================================================
+==============================================================================================================================
+
+
+==============================================================================================================================
+==============================================================================================================================
+3.) On RelayMain , Create Utility Connection Script
+
+sudo nano /usr/local/bin/raspiNeuro
+
+#!/bin/bash
+sshpass -p raspberry ssh pi@localhost -p 10002 -AY -o ServerAliveInterval=60
+
+==============================================================================================================================
+==============================================================================================================================
+
+
+==============================================================================================================================
+==============================================================================================================================
+4.) Create Direct Bridge Utility Script From Client -> RelayMain -> Raspberry PI
+
+sudo nano /usr/local/bin/relayMainRaspiNeuro
+
+#!/bin/bash
+ssh -tt -o IdentitiesOnly=yes -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ServerAliveInterval=60  -o LogLevel=ERROR  -F /dev/null \
+-i /Users/morpheous/.ssh/RelayMain $RELAY_MAIN_USERNAME@$RELAY_MAIN_IP /usr/local/bin/raspiNeuro
+
+==============================================================================================================================
+==============================================================================================================================
+
+
+==============================================================================================================================
+==============================================================================================================================
+5.) Create Utility Script on Raspberry Pi for Viewing Latest Frame PNG in Terminal
+
+sudo nano /usr/local/bin/frameLatest
+
+#!/bin/bash
+convert /home/pi/WORKSPACE/RaspiMotionAlarmRewrite/client/frame.jpeg /home/pi/WORKSPACE/RaspiMotionAlarmRewrite/client frame.png
+tiv /home/pi/WORKSPACE/RaspiMotionAlarmRewrite/client/frame.png
+
+==============================================================================================================================
+==============================================================================================================================
+
+==============================================================================================================================
+==============================================================================================================================
+6.) Create a Utility Script on Raspberry PI that systemctl can Run Without BS Shell Problems
+    This also is where the Time-Window Check Happens , so it will restart if necessary on reboot
+
+#!/bin/bash
+
+currenttime=$(date +%H:%M)
+if [[ "$currenttime" > "22:30" ]] || [[ "$currenttime" < "10:00" ]]; then
+        sudo pkill -9 python
+        set -x
+        set -e
+        python /home/pi/WORKSPACE/RaspiMotionAlarmRewrite/py_scripts/motion_simple_rewrite_fixed.py
+else
+        echo "Not Inside Time Window"
+fi
+==============================================================================================================================
+==============================================================================================================================
+
+
+==============================================================================================================================
+==============================================================================================================================
+7.) Create Service on Raspberry PI for Keeping motion.py Running During Time Window
+    Probably a lot of this indirction and re-indirction ontop of the first indirction is not necessary.
+    The script needs to be run as pi , or at least thats where the Personal File is storred , and python script looks up the "home" folder
+    of current user to get Personal File
+    Also, I couldn't get Node Server sitting on Raspberry to 'catch the published redis stuff from python script. IDK
+
+    You Also Have to Copy the Personal File to /root/.config/personal/personal.json
+    If you use the ExecStart= without "su pi"
+    But the "su pi" wasn't working on reboot.
+    Or maybe it was , and the problem is just it needs this currated restart of pm2 , then the python script
+
+Nov 06 23:55:47 raspberrypi bash[389]: + python /home/pi/WORKSPACE/RaspiMotionAlarmRewrite/py_scripts/motion_simple_rewrite_fixed.py
+Nov 06 23:56:03 raspberrypi bash[389]: Redis<ConnectionPool<Connection<host=localhost,port=10089,db=1>>>
+Nov 06 23:56:03 raspberrypi bash[389]: Error 111 connecting to localhost:10089. Connection refused.
+Nov 06 23:56:03 raspberrypi bash[389]: Failed to connect to REDIS
+Nov 06 23:56:03 raspberrypi systemd[1]: motion-script.service: Service hold-off time over, scheduling restart.
+Nov 06 23:56:04 raspberrypi systemd[1]: Stopped Keeps motion.py Script Running During Time Window.
+Nov 06 23:56:04 raspberrypi systemd[1]: Started Keeps motion.py Script Running During Time Window.
+Nov 06 23:56:04 raspberrypi bash[1118]: SSH is enabled and the default password for the 'pi' user has not been changed.
+Nov 06 23:56:04 raspberrypi bash[1118]: This is a security risk - please login as the 'pi' use
+
+
+sudo nano /etc/systemd/system/motion-script.service
+
+[Unit]
+Description=Keeps motion.py Script Running During Time Window
+
+[Service]
+Type=idle
+ExecStart=/bin/bash -l -c '/usr/local/bin/startRaspiMotionPythonScript'
+#ExecStart=/bin/bash -l -c 'su pi -c "/usr/local/bin/startRaspiMotionPythonScript"'
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+==============================================================================================================================
+==============================================================================================================================
+
+
+==============================================================================================================================
+==============================================================================================================================
+8.) Update CRON Table for Scheduling Python Script Starting , Stopping, and Restarting. There has to be a better way.
+
+sudo crontab -e
+
+0 16   *   *   *    /sbin/shutdown -r
+31 22 * * * /usr/local/bin/restartMotionServerWithDelay
+01 10 * * * systemctl stop motion-script.service
+@reboot /usr/local/bin/restartMotionServerWithDelay
+
+==============================================================================================================================
+==============================================================================================================================
+
+
+9.) Restart Everything on Reboot With Startup Delay
+// Call This Script from the crontab and
+
+sudo nano /usr/local/bin/restartMotionServerWithDelay
+
+#!/bin/bash
+
+sleep 2m
+/bin/bash -l -c 'su pi -c "/home/pi/.nvm/versions/node/v8.9.4/bin/pm2 restart all"'
+sleep 30
+sudo systemctl restart motion-script
+
+
+
+10.)
+
+    sudo nano /usr/local/bin/watchMotionScriptServiceLog
+
+    #!/bin/bash
+    sudo journalctl -u motion-script
