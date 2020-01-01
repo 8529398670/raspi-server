@@ -1,4 +1,5 @@
 const fs = require( "fs" );
+const path = require( "path" );
 const exec = require( "child_process" ).execSync;
 
 function WRITE_SERVICE( options ) {
@@ -38,8 +39,8 @@ function WRITE_LOCAL_SSH_PORT_BIND_SERVICES( services ) {
 				[Service]
 				Restart=always
 				RestartSec=20
-				User=${ services.service_name.local_username }
-				ExecStart=/usr/bin/ssh -N ${ ports_string } ${ services.service_name.remote_username }@${ services.service_name.remote_ip } ServerAliveInterval=60 -o ServerAliveCountMax=3 -o IdentitiesOnly=yes  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -F /dev/null -i ${ services.service_name.ssh_private_key_path }
+				User=${ services[ service_name ].local_username }
+				ExecStart=/usr/bin/ssh -N ${ ports_string } ${ services[ service_name ].remote_username }@${ services[ service_name ].remote_ip } ServerAliveInterval=60 -o ServerAliveCountMax=3 -o IdentitiesOnly=yes  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -F /dev/null -i ${ services[ service_name ].ssh_private_key_path }
 
 				[Install]
 				WantedBy=multi-user.target
