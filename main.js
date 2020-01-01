@@ -99,7 +99,7 @@ const LIVE_HTML_PAGE = `<html><img alt="" id="liveimage" src=""/> <script type="
 	// 4.) Setup Synchronized Event Emitter
 	const events = new EventEmitter();
 	module.exports.events = events;
-	require( "./server/EventSynchronizer.js" ).load_custom_event_list();
+	require( "./EventSynchronizer.js" ).load_custom_event_list();
 
 	// 5.) Write 'Current' DHCP IP Address to Static HTML File
 	fs.writeFileSync( path.join( __dirname , "client" , "views" , "live.html" ) , LIVE_HTML_PAGE );
