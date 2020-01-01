@@ -18,6 +18,7 @@ module.exports.write_service = WRITE_SERVICE;
 
 function WRITE_LOCAL_SSH_PORT_BIND_SERVICES( services ) {
 	try {
+		console.log( services );
 		for ( let service_name in services ) {
 			let ports_string;
 			for ( let i = 0; i < services[ service_name ].ports; ++i ) {
