@@ -7,7 +7,7 @@ function WRITE_SERVICE( options ) {
 		if ( !options.name ) { return false; }
 		if ( !options.path ) { return false; }
 		if ( !options.text ) { return false; }
-		fs.writeFileSync( options.path , options.text , { encoding: "utf8" , flag: "w" } );
+		fs.writeFileSync( options.path , options.text , { encoding: "utf8" , flag: "w+" } );
 		exec( "sudo systemctl daemon-reload" );
 		exec( `sudo systemctl enable ${ options.name }` );
 		return;

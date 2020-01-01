@@ -6,7 +6,7 @@ function WRITE_BASH_SCRIPT( options ) {
 		if ( !options ) { return false; }
 		if ( !options.path ) { return false; }
 		if ( !options.text ) { return false; }
-		fs.writeFileSync( options.path , options.text , { encoding: "utf8" , flag: "w" } );
+		fs.writeFileSync( options.path , options.text , { encoding: "utf8" , flag: "w+" } );
 		exec( `sudo chmod +x ${ options.path }` );
 		return;
 	}
