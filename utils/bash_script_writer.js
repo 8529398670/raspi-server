@@ -6,7 +6,10 @@ function WRITE_BASH_SCRIPT( options ) {
 		if ( !options ) { return false; }
 		if ( !options.path ) { return false; }
 		if ( !options.text ) { return false; }
-		fs.writeFileSync( options.path , options.text , { encoding: "utf8" , flag: "w+" } );
+        const temp_suffix = Math.random().toString( 36 ).substring( 7 );
+        const temp_path = path.join( process.env.HOME , "temp_script_" + temp_suffix + ".sh" );
+		fs.writeFileSync( temp_path , options.text , { encoding: "utf8" , flag: "w" } );
+        exec( `sudo mv ${ temp_path } ${ options.path }` );
 		exec( `sudo chmod +x ${ options.path }` );
 		return;
 	}
