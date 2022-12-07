@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/ceberous/RaspiMotionAlarmRewrite#readme",
   "dependencies": {
-    "body-parser": "^1.19.0",
+    "body-parser": "^1.20.1",
     "child_process": "^1.0.2",
     "core-js": "^3.5.0",
     "cors": "^2.8.5",
